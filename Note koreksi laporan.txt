@@ -1,0 +1,25 @@
+TWITTER (aman)
+1. Slide 15, category axis tidak semua brand terlihat --> sudah
+2. Slide 27, 35, 49, 54, kata-katanya berbeda tapi makna sama
+3. Slide 30, kata-katanya berbeda tapi makna sama dan ada kata2 yg belum dihilangkan
+4. Slide 42, 46, 66, nilai total beda
+5. Slide 66, ada kalimat yang tidak sama dan tidak urut
+6. Bagian area perbaikan di laporan dibuat negatif
+
+EMAIL (aman)
+1. Slide 11, 15, nilai beda
+2. barchart category axis tidak terlihaat semua brandnya --> sudah
+3. Slide 56 no 1 tidak ada kata tidak, ada yg 2 angka habis koma --> sudah
+4. Slide 63 atau 64 (Atribut feasibility) ada poin yg gak ada. --> sudah benar
+5. Slide 68, ada poin yg masih ada kata tidak. --> sudah
+6. Slide 73, ada poin yg tidak urut tapi semua ada dan nilaninya sudah benar
+
+CALL CENTER (aman)
+2. Slide 38, 80, 84 ada kata2 yg belum dihilangkan ...
+3. Slide 76 kata-katanya berbedatapi makna sama
+4. Slide 80 no 1 tidak ada kata tidak, ada yg 2 angka habis koma --> sudah
+5. Slide 84 (engagement index) ada 1 poin yg kurang --> di sheet pengolahan memang tidak ada
+6. Bagian bagian impact index koma beda, kata tidak belum ada
+8. Slide 97, 99, 101 impact indexnya berbeda --> ini memang beda
+
+
