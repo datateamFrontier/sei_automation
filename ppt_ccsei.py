@@ -1,6 +1,9 @@
-import pptx
 import pandas as pd
 import numpy as np
+
+import olah_data as od
+
+import pptx
 from pptx import Presentation
 from pptx.chart.data import CategoryChartData, XyChartData, ChartData
 from pptx.enum.chart import XL_CHART_TYPE
@@ -13,7 +16,7 @@ from pptx.oxml.xmlchemy import OxmlElement
 
 
 """
-Program ini berisi fungsi-fungsi untuk melakukan plot data hasil olah indeks ke file laporan .pptx
+Program ini berisi fungsi-fungsi untuk melakukan plot data hasil olah indeks ke file laporan .pptx (v2)
 """
 
 
@@ -42,48 +45,22 @@ def Reverse(lst):
     return [ele for ele in reversed(lst)]
 
 
-
-def get_ivr_nonivr(list_brand, kriteria):
-    """
-    Mendefinisikan brand yang memiliki IVR atau tidak di kategori call center
-    
-    Parameter
-    ---------
-    list_brand : daftar brand yang ada di data
-    kriteria_call_center : kriteria penentu pembagian brand IVR dan non-IVR
-    
-    Return
-    ------
-    brand_ivr : daftar brand yang memiliki IVR
-    brand_nonivr : daftar brand yang tidak memiliki IVR
-    """    
-    if kriteria=='car insurance':
-        brand_nonivr = [list_brand[1]]
-    elif kriteria=='courier':
-        brand_nonivr = list_brand[4:]
-    elif kriteria=='regular banking':
-        brand_nonivr = [list_brand[4],list_brand[5],list_brand[6],list_brand[9],list_brand[14],
-                        list_brand[25],list_brand[26],list_brand[27],list_brand[29]]
-    brand_ivr=  [x for x in list_brand if x not in brand_nonivr]
-    return brand_ivr, brand_nonivr
-
-
-
-def bobot_indeks(bobot_indeks):
+def bobot_indeks(bobot_indeks, perbaikan=False):
     """
     Melakukan pra-pengolahan data bobot. Mengisi kolom-kolom yang kosong di bagian 'DIMENSI',
     'KPI', 'SUB KPI', dan 'ASPEK'.
-    
+
     Parameter
     ---------
     bobot_indeks : dataframe yang berisi daftar bobot
-    
+
     Return
     ------
     bobot_indeks : dataframe bobot yang sudah tidak memiliki cell kosong di kolom yang ditentukan.
     """
-    bobot_indeks['DIMENSI'] = bobot_indeks['DIMENSI'].fillna(method='ffill')
-    bobot_indeks['KPI'] = bobot_indeks['KPI'].fillna(method='ffill')
+    if perbaikan==False:
+        bobot_indeks['DIMENSI'] = bobot_indeks['DIMENSI'].fillna(method='ffill')
+        bobot_indeks['KPI'] = bobot_indeks['KPI'].fillna(method='ffill')
     bobot_indeks['SUB KPI'] = bobot_indeks['SUB KPI'].fillna(method='ffill')
     bobot_indeks['ASPEK'] = bobot_indeks['ASPEK'].fillna(method='ffill')
 
@@ -94,11 +71,11 @@ def bobot_indeks(bobot_indeks):
 def tabel_definisi_dimensi(kriteria):
     """
     Memilih tabel definisi sesuai kriteria
-    
+
     Parameter
     ---------
-    kriteria : kriteria SEI ('call center', 'twitter', atau 'email')
-    
+    kriteria : kriteria SEI ('call center', 'online chat', 'twitter', atau 'email')
+
     Return
     ------
     isi_tabel : list array yang dipakai untuk tabel definisi dimensi
@@ -150,6 +127,29 @@ def tabel_definisi_dimensi(kriteria):
                      ['KPI : CLOSING',
                       'Mengukur tingkat keramahan dan keterkaitan lebih lanjut untuk menggunakan/berkunjung ke akun Twitter tersebut.']]
         isi_tabel = [isi_tabel_engaging, isi_tabel_humtouch, isi_tabel_navigat]
+        
+    elif kriteria=='online chat':
+        isi_tabel_engaging = [['DIMENSI : ENGAGING',
+                      'Mengukur kinerja sebuah akun Online Chat dari segi keterikatan yang dialami pelanggan saat bergabung ke akun tersebut dalam hal kemudahan akses dan kemudahan sistem didalamnya berdasarkan 2 KPI yaitu : ACCESS dan SYSTEM.'],
+                     ['KPI : ACCESS',
+                      'Mengukur tingkat kemudahan yang dialami pelanggan untuk bergabung dalam akun Online Chat tersebut didalamnya mengandung unsur mudah ditemukan akun Online Chat-nya, mudah terkirim pesannya dan ada penanggung jawab diakun tersebut.'],
+                     ['KPI : SYSTEM',
+                      'Mengukur tingkat kepastian pesan yang dikirim pelanggan dapat terjawab/ditanggapi secara langsung, cepat responnya dan tuntas jawabnya.']]
+        isi_tabel_humtouch = [['DIMENSI : HUMAN TOUCHING',
+                      'Mengukur kinerja sebuah akun Online Chat dari segi sentuhan emosional kemanusiaan sehingga pelanggan merasa sedang berhubungan dengan petugas secara langsung berdasarkan 2 KPI yaitu : COMMUNICATING dan ATTITUDE.'],
+                     ['KPI : COMMUNICATING',
+                      'Mengukur keramahan dan keluwesan dari bahasa yang digunakan, yang dirasakan pelanggan saat berinteraksi baik verbal, non verbal maupun virtual.'],
+                     ['KPI : ATTITUDE',
+                      'Mengukur kinerja sebuah akun Online Chat dari segi perhatian, emphaty dan kepedulian yang dirasakan pelanggan dalam menanggapi masalahnya.']]
+        isi_tabel_navigat = [['DIMENSI : NAVIGATING',
+                      'Mengukur sebuah akun Online Chat dalam hal ketuntasan dan solusi tindak lanjut dari hal yang disampaikan pelanggan berdasarkan 3 KPI yaitu : PROBING, PROVIDING SOLUTION dan CLOSING.'],
+                     ['KPI : PROBING',
+                      'Mengukur tingkat kedalaman dalam mencari kebutuhan pelanggan yang diharapkan.'],
+                     ['KPI : PROVIDING SOLUTION',
+                      'Mengukur tingkat ketuntasan dalam memberikan solusi dan menawarkan solusi lanjutan yang dirasakan oleh pelanggan.'],
+                     ['KPI : CLOSING',
+                      'Mengukur tingkat keramahan dan keterkaitan lebih lanjut untuk menggunakan/berkunjung ke akun Online Chat tersebut.']]
+        isi_tabel = [isi_tabel_engaging, isi_tabel_humtouch, isi_tabel_navigat]        
 
     elif kriteria=='email':
         isi_tabel_enab = [['DIMENSI : ENABLING',
@@ -183,7 +183,7 @@ def tabel_definisi_dimensi(kriteria):
 def FileTemplate():
     """
     Membuat template file PowerPoint kosong
-    
+
 
     Return
     ------
@@ -197,13 +197,13 @@ def FileTemplate():
 def SubElement(parent, tagname, **kwargs):
     """
     Fungsi untuk mengedit kode XML python-pptx pada border tabel
-    
+
     Parameter
     ---------
     parent : parent dari element
     tagname : nama tag untuk element
     **kwargs : parameter-parameter lainnya
-    
+
     Return
     ------
     element : elemen xml yang sudah diganti
@@ -307,11 +307,11 @@ def buat_tabel(template_ppt,nomor_slide,
 def halaman_slide(template_ppt):
     """
     Membuat halaman slide di tiap slide pada bagian kanan bawah
-    
+
     Parameter
     ---------
     template_ppt : template ppt yang akan dibuat halaman slide-nya
-    
+
     Return
     ------
     None
@@ -336,19 +336,19 @@ def halaman_slide(template_ppt):
 def slide_cover(template_ppt, kategori, tahun, list_bulan):
     """
     Membuat slide pada bagian cover
-    
+
     Parameter
     ---------
     template_ppt : template ptt yang digunakan
-    kategori : kategori SEI yang akan dibuat ('call center', 'twitter', 'email')
+    kategori : kategori SEI yang akan dibuat ('call center', 'online chat', 'twitter', 'email')
     tahun : tahun pembuatan laporan
     list_bulan : list array bulan yang ada di dalam dataframe
-    
+
     Return
     ------
     None
     """
-    
+
     slide = template_ppt.slide_layouts[6]
     slide = template_ppt.slides.add_slide(slide)
 
@@ -465,39 +465,39 @@ def slide_cover(template_ppt, kategori, tahun, list_bulan):
 def footer(gambar_footer, slide):
     """
     Meletakkan gambar footer di bawah tengah
-    
+
     Parameter
     ---------
     gambar_footer : nama file gambar yang akan dipakai
     slide : nomor slide yang akan diberi gambar footer
-    
+
     Return
     ------
-    None    
+    None
     """
-    
+
     footer_left = Inches(4.4)
     footer_top = Inches(7.1)
     footer_width = Inches(1.25)
     footer_height = Inches(0.35)
     footer_ = slide.shapes.add_picture(gambar_footer, footer_left, footer_top, footer_width, footer_height)
 
-    
+
 
 def slide_pembuka(template_ppt, gambar_footer):
     """
     Membuat slide pembuka setelah slide cover
-    
+
     Parameter
     ---------
     template_ppt : template ptt yang digunakan
     gambar_footer : nama file gambar yang akan dipakai
-    
+
     Return
     ------
-    None    
+    None
     """
-    
+
     slide = template_ppt.slide_layouts[6]
     slide = template_ppt.slides.add_slide(slide)
 
@@ -528,18 +528,18 @@ def slide_pembuka(template_ppt, gambar_footer):
 def slide_daftar_isi(template_ppt, gambar_footer, kriteria):
     """
     Membuat slide berisi tabel daftar isi
-    
+
     Parameter
     ---------
     template_ppt : template ptt yang digunakan
     gambar_footer : nama file gambar yang akan dipakai
-    kriteria : kategori SEI yang akan dibuat ('call center', 'twitter', 'email')
-    
+    kriteria : kategori SEI yang akan dibuat ('call center', 'online chat', 'twitter', 'email')
+
     Return
     ------
-    None    
+    None
     """
-    
+
     slide_daftar_isi = template_ppt.slide_layouts[6]
     slide = template_ppt.slides.add_slide(slide_daftar_isi)
     shapes = slide.shapes
@@ -558,8 +558,8 @@ def slide_daftar_isi(template_ppt, gambar_footer, kriteria):
 
     if kriteria=='email':
         isi_tabel = [['No','Bagian'],
-                    ['1.','Frame Work'],
-                    ['2.','Definisi Dimensi dan KPI CCSEI'],
+                    ['1.','Frame Work ESEI'],
+                    ['2.','Definisi Dimensi dan KPI ESEI'],
                     ['3.','Kinerja Dimensi Enabling'],
                     ['4.','Kinerja Dimensi Enjoying'],
                     ['5.','Engagement Index'],
@@ -573,9 +573,18 @@ def slide_daftar_isi(template_ppt, gambar_footer, kriteria):
                     ['5.','Kinerja Dimensi Navigating'],
                     ['6.','Engagement Index'],
                     ['7.','Area Perbaikan']]
+    elif kriteria=='online chat':
+            isi_tabel = [['No','Bagian'],
+                        ['1.','Frame Work OCSEI'],
+                        ['2.','Definisi Dimensi dan KPI OCSEI'],
+                        ['3.','Kinerja Dimensi Engaging'],
+                        ['4.','Kinerja Dimensi Human Touching'],
+                        ['5.','Kinerja Dimensi Navigating'],
+                        ['6.','Engagement Index'],
+                        ['7.','Area Perbaikan']]                    
     elif kriteria=='call center':
         isi_tabel = [['No','Bagian'],
-                    ['1.','Frame Work dan Definisi Dimensi dan KPI CCSEI'],
+                    ['1.','Frame Work CCSEI'],
                     ['2.','Definisi Dimensi dan KPI CCSEI'],
                     ['3.','Kinerja Dimensi Access'],
                     ['4.','Kinerja Dimensi System & Procedure'],
@@ -625,21 +634,21 @@ def slide_daftar_isi(template_ppt, gambar_footer, kriteria):
     footer(gambar_footer, slide)
 
 
-    
+
 def slide_transisi(template_ppt, gambar_footer, tulisan):
     """
     Membuat slide transisi dengan box dan tulisannya
-    
+
     Parameter
     ---------
     template_ppt : template ptt yang digunakan
     gambar_footer : nama file gambar yang akan dipakai
     tulisan : tulisan di dalam text box
-    
+
     Return
     ------
-    None    
-    """    
+    None
+    """
     slide_transisi = template_ppt.slide_layouts[6]
     slide = template_ppt.slides.add_slide(slide_transisi)
     shapes = slide.shapes
@@ -674,23 +683,23 @@ def slide_transisi(template_ppt, gambar_footer, tulisan):
 
     footer(gambar_footer, slide)
 
-    
+
 
 def slide_framework(template_ppt, gambar_footer, kriteria):
     """
     Membuat slide ilustrasi framework SEI sesuai kategori SEI-nya
-    
+
     Parameter
     ---------
     template_ppt : template ptt yang digunakan
     gambar_footer : nama file gambar yang akan dipakai
-    kriteria : kategori SEI yang akan dibuat ('call center', 'twitter', 'email')
-    
+    kriteria : kategori SEI yang akan dibuat ('call center', 'online chat', 'twitter', 'email')
+
     Return
     ------
-    None    
+    None
     """
-    
+
     slide_framework = template_ppt.slide_layouts[6]
     slide = template_ppt.slides.add_slide(slide_framework)
     shapes = slide.shapes
@@ -699,10 +708,13 @@ def slide_framework(template_ppt, gambar_footer, kriteria):
         teks = 'CCSEI'
         gambar = "framework "+kriteria+".png"
     elif kriteria =='twitter':
-        teks = "TCSEI"
+        teks = "TSEI"
         gambar = "framework "+kriteria+".jpeg"
+    elif kriteria == 'online chat':
+        teks = "OCSEI"
+        gambar = "framework "+kriteria+".png"    
     elif kriteria=='email':
-        teks = "ECSEI"
+        teks = "ESEI"
         gambar = "framework "+kriteria+".jpeg"
 
     #judul
@@ -728,22 +740,22 @@ def slide_framework(template_ppt, gambar_footer, kriteria):
     footer(gambar_footer, slide)
 
 
-    
+
 def slide_definisi_dimensi(template_ppt, gambar_footer, kriteria):
     """
     Membuat slide yang berisi definisi tiap dimensi yang dipakai dalam framework SEI
-    
+
     Parameter
     ---------
     template_ppt : template ptt yang digunakan
     gambar_footer : nama file gambar yang akan dipakai
-    kriteria : kategori SEI yang akan dibuat ('call center', 'twitter', 'email')
-    
+    kriteria : kategori SEI yang akan dibuat ('call center', 'online chat', 'twitter', 'email')
+
     Return
     ------
-    None    
+    None
     """
-    
+
     isi_tabel = tabel_definisi_dimensi(kriteria)
     for i_slide in range(len(isi_tabel)):
         data_isi_tabel = isi_tabel[i_slide]
@@ -754,7 +766,7 @@ def slide_definisi_dimensi(template_ppt, gambar_footer, kriteria):
 
         if kriteria=='call center':
             teks = 'CCSEI'
-        elif kriteria =='twitter':
+        elif kriteria =='twitter' or kriteria == 'online chat':
             teks = "TCSEI"
         elif kriteria=='email':
             teks = "ECSEI"
@@ -847,11 +859,11 @@ def slide_definisi_dimensi(template_ppt, gambar_footer, kriteria):
         footer(gambar_footer, slide)
 
 
-        
+
 def plot_grafik_tracking(template_ppt, gambar_footer, list_bulan, data, dimensi, kpi, client):
     """
     Membuat slide grafik tracking kpi SEI
-    
+
     Parameter
     ---------
     template_ppt : template ptt yang digunakan
@@ -861,12 +873,12 @@ def plot_grafik_tracking(template_ppt, gambar_footer, list_bulan, data, dimensi,
     dimensi : nama dimensi yang akan ditampilkan
     kpi : nama kpi yang akan ditampilkan
     client : nama client yang dibuatkan laporan
-    
+
     Return
     ------
-    None    
+    None
     """
-    
+
     slide_grafik = template_ppt.slide_layouts[6]
     slide = template_ppt.slides.add_slide(slide_grafik)
 
@@ -909,7 +921,7 @@ def plot_grafik_tracking(template_ppt, gambar_footer, list_bulan, data, dimensi,
     shape1.shadow.inherit = False
 
     #data
-    data_kpi = pd.read_excel(data, sheet_name='kpi')
+    data_kpi = pd.read_excel(data, sheet_name='kpi', engine='openpyxl')
     data_kpi['Dimensi'] = data_kpi['Dimensi'].fillna(method='ffill')
     data_kpi['KPI'] = data_kpi['KPI'].fillna(method='ffill')
     data_kpi = data_kpi.set_index(['Dimensi','KPI','Brand'])
@@ -918,11 +930,13 @@ def plot_grafik_tracking(template_ppt, gambar_footer, list_bulan, data, dimensi,
     data_client = round(data_client,1)
     data_kosong = [None for i in range(13) if i>len(data_client)]
     data_client = data_client.append(pd.Series(data_kosong))
+    data_client = data_client.values
+    data_client = ['#N/A' if str(x)=='nan' else x for x in data_client]
 
     # define chart data ---------------------
     chart_data = CategoryChartData()
     chart_data.categories = nama_bulan[:len(list_bulan)]#data_client.index
-    chart_data.add_series(client, data_client.values)
+    chart_data.add_series(client, data_client)
 
     x, y, cx, cy = Inches(0.75), Inches(1.75), Inches(8), Inches(4.25)
     chart = slide.shapes.add_chart(
@@ -944,15 +958,18 @@ def plot_grafik_tracking(template_ppt, gambar_footer, list_bulan, data, dimensi,
     chart.plots[0].series[0].format.line.width = Pt(3)
 
     for i in range(len(list_bulan)):
-        label = data_client.values[i]
+        label = data_client[i]
         chart.plots[0].series[0].points[i].data_label.text_frame.text = str(label)+"%"
         chart.plots[0].series[0].points[i].data_label.ShowBubbleSize = True
         chart.plots[0].series[0].points[i].data_label.font.size = Pt(12)
         chart.plots[0].series[0].marker.style = XL_MARKER_STYLE.CIRCLE
         chart.plots[0].series[0].marker.format.fill.solid()
         chart.plots[0].series[0].marker.format.fill.fore_color.rgb = RGBColor(0,0,0)
-        if label > 60:
-            chart.plots[0].series[0].points[i].data_label.position = XL_LABEL_POSITION.BELOW
+        if type(label)!=str:
+            if label > 60:
+                chart.plots[0].series[0].points[i].data_label.position = XL_LABEL_POSITION.BELOW
+            else:
+                chart.plots[0].series[0].points[i].data_label.position = XL_LABEL_POSITION.ABOVE
         else:
             chart.plots[0].series[0].points[i].data_label.position = XL_LABEL_POSITION.ABOVE
 
@@ -964,7 +981,7 @@ def plot_tabel_data_semester(template_ppt, gambar_footer, list_bulan, data_xls, 
                              client, kriteria=None, bobot=None):
     """
     Membuat slide tabel data per subkpi pada semester 1 dan semester 2
-    
+
     Parameter
     ---------
     template_ppt : template ptt yang digunakan
@@ -974,19 +991,20 @@ def plot_tabel_data_semester(template_ppt, gambar_footer, list_bulan, data_xls, 
     dimensi_ : nama dimensi yang akan ditampilkan
     subkpi_ : nama subkpi_ yang akan ditampilkan
     client : nama client yang dibuatkan laporan
-    kriteria : kategori SEI yang akan dibuat ('call center', 'twitter', 'email')
+    kriteria : kategori SEI yang akan dibuat ('call center', 'online chat', 'twitter', 'email')
     bobot : dataframe yang berisi daftar bobot perhitungan indeks
-    
+
     Return
     ------
-    None    
-    """    
-    
+    None
+    """
+
     jumlah_semester = 2
 
     #data
-    data_mentah = pd.read_excel(data_xls, sheet_name='data mentah')
-    data_aspek = pd.read_excel(data_xls, sheet_name='aspek')
+    data_mentah = pd.read_excel(data_xls, sheet_name='data mentah', engine='openpyxl')
+    
+    data_aspek = pd.read_excel(data_xls, sheet_name='aspek', engine='openpyxl')
     data_aspek['Dimensi'] = data_aspek['Dimensi'].fillna(method='ffill')
     data_aspek['KPI'] = data_aspek['KPI'].fillna(method='ffill')
     data_aspek['SUB KPI'] = data_aspek['SUB KPI'].fillna(method='ffill')
@@ -996,13 +1014,20 @@ def plot_tabel_data_semester(template_ppt, gambar_footer, list_bulan, data_xls, 
     data_aspek = data_aspek.set_index(['Dimensi','KPI','SUB KPI','Nomor','Kode','Aspek','Brand'])
 
     df_subkpi = data_aspek[data_aspek.index.get_level_values('SUB KPI').isin([subkpi_])]
+    
     list_aspek = df_subkpi.index.get_level_values('Aspek').unique().values
+    
+    data_subkpi = pd.read_excel(data_xls, sheet_name='subkpi', index_col=[0,1,2,3], engine='openpyxl')
+    data_subkpi = data_subkpi[data_subkpi.index.get_level_values("SUB KPI").isin([subkpi_])]
 
-    if (kriteria=='twitter' or kriteria=='email') and (subkpi_ == 'Feasibility'):
+    if (kriteria=='twitter') or (kriteria=='online chat') or (kriteria=='email'):
+        crosstab_rata_transpose = pd.read_excel(data_xls, sheet_name = 'crosstab transpose',
+                                               header=[0,1],index_col=[0], engine='openpyxl')
+        crosstab_rata_transpose = crosstab_rata_transpose.reset_index()
+        crosstab_rata_transpose = crosstab_rata_transpose.rename(columns = {'KODE':'Aspek'})
+
+    if (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email') and (subkpi_ == 'Feasibility'):
         var= bobot[['ASPEK','SUB ASPEK']][:4].copy()
-        crosstab_rata_transpose = pd.read_excel(data_xls, sheet_name = 'crosstab rata-rata',
-                                               header=[0,1], index_col=[0])
-        crosstab_rata_transpose = crosstab_rata_transpose.rename(columns = {'Unnamed: 1_level_1':''})
         asp = df_subkpi.index.get_level_values('Aspek').unique().to_list()
         aspek_feas = []
         for i in range(len(asp)):
@@ -1012,13 +1037,12 @@ def plot_tabel_data_semester(template_ppt, gambar_footer, list_bulan, data_xls, 
                 var['ASPEK1']=var['ASPEK1'].str.replace('Terlihat','')
                 var['ASPEK1']=var['ASPEK1'].str.replace('Di',' di')
 
-                apa = crosstab_rata_transpose[:4].copy()
+                apa = crosstab_rata_transpose[:4].copy()                
                 apa['Aspek']=var['ASPEK1']
                 apa = apa.set_index('Aspek')
-                apa.columns = apa.columns.set_levels(nomor_bulan, level=0)
                 apa = apa.stack()
-                apa.columns = nama_bulan[:len(list_bulan)]
-                apa['~Average'] = round(apa.mean(axis=1),2)
+                apa = apa.reindex(columns=nama_bulan[:len(list_bulan)])
+                apa['~Average'] = round(apa.mean(axis=1),1)
 
                 list_aspek = apa[apa.index.get_level_values('Brand').isin([client])].index.values
                 list_aspek = [x[0] for x in list_aspek]
@@ -1028,9 +1052,6 @@ def plot_tabel_data_semester(template_ppt, gambar_footer, list_bulan, data_xls, 
 
     elif (kriteria=='email') and ((subkpi_ == 'Service Standard Consistency') or (subkpi_=='Soft Skill')):
         var= bobot[['ASPEK','SUB ASPEK']].copy()
-        crosstab_rata_transpose = pd.read_excel(data_xls, sheet_name = 'crosstab rata-rata',
-                                               header=[0,1], index_col=[0])
-        crosstab_rata_transpose = crosstab_rata_transpose.rename(columns = {'Unnamed: 1_level_1':''})
         aspek_feas = []
         for i in range(3):
             asp = df_subkpi.index.get_level_values('Aspek').unique().to_list()
@@ -1045,10 +1066,9 @@ def plot_tabel_data_semester(template_ppt, gambar_footer, list_bulan, data_xls, 
                 apa1 = apa1.reset_index(drop=True)
                 apa1['Aspek'] = pd.Series(subaspek_)
                 apa1 = apa1.set_index('Aspek')
-                apa1.columns = apa1.columns.set_levels(nomor_bulan, level=0)
                 apa1 = apa1.stack()
-                apa1.columns = nama_bulan[:len(list_bulan)]
-                apa1['~Average'] = round(apa1.mean(axis=1),2)
+                apa1 = apa1.reindex(columns=nama_bulan[:len(list_bulan)])
+                apa1['~Average'] = round(apa1.mean(axis=1),1)
 
                 list_aspek = apa1[apa1.index.get_level_values('Brand').isin([client])].index.values
                 list_aspek = [x[0] for x in list_aspek]
@@ -1064,9 +1084,9 @@ def plot_tabel_data_semester(template_ppt, gambar_footer, list_bulan, data_xls, 
                 apa2['Aspek'] = pd.Series(subaspek_)
                 apa2 = apa2.set_index('Aspek')
                 apa2.columns = apa2.columns.set_levels(nomor_bulan, level=0)
-                apa2 = apa2.stack()
+                apa2 = apa2.stack(dropna=False)
                 apa2.columns = nama_bulan[:len(list_bulan)]
-                apa2['~Average'] = round(apa2.mean(axis=1),2)
+                apa2['~Average'] = round(apa2.mean(axis=1),1)
 
                 list_aspek = apa2[apa2.index.get_level_values('Brand').isin([client])].index.values
                 list_aspek = [x[0] for x in list_aspek]
@@ -1098,9 +1118,9 @@ def plot_tabel_data_semester(template_ppt, gambar_footer, list_bulan, data_xls, 
             p.alignment = PP_ALIGN.CENTER
 
             cols = 8
-            if (kriteria=='twitter' or kriteria=='email') and (subkpi_ == 'Feasibility') and (asp==1):
+            if (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email') and (subkpi_ == 'Feasibility') and (asp==1):
                 rows = len([aspek_feas[asp]])+3
-            elif (kriteria=='twitter' or kriteria=='email') and (subkpi_ == 'Feasibility') and (asp==0):
+            elif (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email') and (subkpi_ == 'Feasibility') and (asp==0):
                 rows = len(aspek_feas[asp])+3
             elif (kriteria=='email') and ((subkpi_ == 'Service Standard Consistency') or (subkpi_=='Soft Skill')):
                 rows = len(aspek_feas[asp])+3
@@ -1122,7 +1142,7 @@ def plot_tabel_data_semester(template_ppt, gambar_footer, list_bulan, data_xls, 
             for j in range(rows):
                 list_temp = []
                 if j==0:
-                    if (kriteria=='twitter' or kriteria=='email') and (subkpi_=='Feasibility'):
+                    if (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email') and (subkpi_=='Feasibility'):
                         header1 = ['','ATRIBUT %s %s'%(subkpi_.upper(), str(asp+1)),'Januari','Februari','Maret','April','Mei','Juni']
                         header2 = ['','ATRIBUT %s %s'%(subkpi_.upper(), str(asp+1)),'Juli','Agustus','September','Oktober','November','Desember']
                     elif (kriteria=='email') and ((subkpi_ == 'Service Standard Consistency') or (subkpi_=='Soft Skill')):
@@ -1165,11 +1185,12 @@ def plot_tabel_data_semester(template_ppt, gambar_footer, list_bulan, data_xls, 
                     tabel_plot.cell(j,0).merge(tabel_plot.cell(j,1))
 
                 elif j<(rows-3)+1:
-                    if (subkpi_ == 'Feasibility') and (asp==0) and (kriteria=='twitter' or kriteria=='email'):
+                    if (subkpi_ == 'Feasibility') and (asp==0) and (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email'):
                         value_client = apa[apa.index.get_level_values('Brand').isin([client])].values[j-1]
-                    elif (subkpi_ == 'Feasibility') and (asp==1) and (kriteria=='twitter' or kriteria=='email'):
+                    elif (subkpi_ == 'Feasibility') and (asp==1) and (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email'):
                         temp_df_asp = df_subkpi[df_subkpi.index.get_level_values('SUB KPI').isin([subkpi_])]
                         value_client = temp_df_asp[temp_df_asp.index.get_level_values('Aspek').isin(aspek_feas[asp])]
+                        #display(value_client[value_client.index.get_level_values('Brand').isin([client])])
                         value_client = value_client[value_client.index.get_level_values('Brand').isin([client])].values[0]
 
                     elif ((subkpi_=='Service Standard Consistency') or (subkpi_=='Soft Skill')) and (kriteria=='email') and (asp!=len(aspek_feas)-1):
@@ -1202,9 +1223,9 @@ def plot_tabel_data_semester(template_ppt, gambar_footer, list_bulan, data_xls, 
 
                     list_temp.extend([j])
 
-                    if (subkpi_ == 'Feasibility') and (asp==0) and (kriteria=='twitter' or kriteria=='email'):
+                    if (subkpi_ == 'Feasibility') and (asp==0) and (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email'):
                         list_temp.extend([aspek_feas[asp][j-1]])
-                    elif (subkpi_ == 'Feasibility') and(asp==1) and (kriteria=='twitter' or kriteria=='email'):
+                    elif (subkpi_ == 'Feasibility') and(asp==1) and (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email'):
                         list_temp.extend(aspek_feas[asp])
                     elif ((subkpi_ == 'Service Standard Consistency') or (subkpi_=='Soft Skill')) and (kriteria=='email'):
                         list_temp.extend([aspek_feas[asp][j-1]])
@@ -1222,7 +1243,9 @@ def plot_tabel_data_semester(template_ppt, gambar_footer, list_bulan, data_xls, 
 
                     for k in range(cols):
                         t_value = list_temp[k]
-                        if type(t_value)==np.float64:
+                        if str(t_value)=='nan':
+                            val_ = '#N/A'
+                        elif type(t_value)==np.float64:
                             val_ = str(round(t_value,1))+"%"
                         else:
                             val_ = str(t_value)
@@ -1252,22 +1275,27 @@ def plot_tabel_data_semester(template_ppt, gambar_footer, list_bulan, data_xls, 
                     if len(list_bulan)>0 and len(list_bulan)<=6:
                         if semester==0:
                             for k in list_bulan:
-                                if ('Feasibility'==subkpi_) and (asp==0) and (kriteria=='twitter' or kriteria=='email'):
-                                    rata_ =apa[apa.index.get_level_values('Brand').isin([client])].values[0][nama_bulan.index(k)]
+                                if ('Feasibility'==subkpi_) and (asp==0) and (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email'):
+                                    rata_ = apa[apa.index.get_level_values('Brand').isin([client])].values[0][nama_bulan.index(k)]
                                     rata_ = round(rata_,1)
-                                elif ('Feasibility'==subkpi_) and (asp==1) and (kriteria=='twitter' or kriteria=='email'):
+                                    #display("feasibility 1", apa)
+                                elif ('Feasibility'==subkpi_) and (asp==1) and (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email'):
                                     rata_ =value_client[-1]
                                     rata_ = round(rata_,1)
+                                    #display("feasibility 2", value_client)
 
                                 elif ((subkpi_ == 'Service Standard Consistency') or (subkpi_=='Soft Skill')) and (kriteria=='email') and (asp!=len(aspek_feas)-1):
                                     if asp==0:
                                         rata_ =apa1[apa1.index.get_level_values('Brand').isin([client])].values[0][nama_bulan.index(k)]
+                                        #display("SSC 0", apa1)
                                     else:
                                         rata_ =apa1[apa1.index.get_level_values('Brand').isin([client])].values[0][nama_bulan.index(k)]
+                                        #display("SSC 1", apa1)
                                     rata_ = round(rata_,1)
                                 elif ((subkpi_ == 'Service Standard Consistency') or (subkpi_=='Soft Skill')) and (kriteria=='email') and (asp==len(aspek_feas)-1):
                                     rata_ =value_client[-1]
                                     rata_ = round(rata_,1)
+                                    #display("SSC 2", data_subkpi)
 
                                 else:
                                     id_value = header.index(k)
@@ -1284,7 +1312,9 @@ def plot_tabel_data_semester(template_ppt, gambar_footer, list_bulan, data_xls, 
 
                             for k in range(cols):
                                 t_value = list_temp[k]
-                                if type(t_value)==np.float64:
+                                if str(t_value)=='nan':
+                                    val_ = '#N/A'
+                                elif type(t_value)==np.float64:
                                     val_ = str(t_value)+"%"
                                 else:
                                     val_ = str(t_value)
@@ -1326,29 +1356,36 @@ def plot_tabel_data_semester(template_ppt, gambar_footer, list_bulan, data_xls, 
                         else:
                             nm_bln = [i for i in nama_bulan[6:] if i in list_bulan]
 
+#                        if semester==0:
                         for k in nm_bln:
-                            if ('Feasibility'==subkpi_) and (asp==0) and (kriteria=='twitter' or kriteria=='email'):
-                                rata_ =apa[apa.index.get_level_values('Brand').isin([client])].values[0][nama_bulan.index(k)]
+                            if ('Feasibility'==subkpi_) and (asp==0) and (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email'):
+                                rata_ = apa[apa.index.get_level_values('Brand').isin([client])].values[0][nama_bulan.index(k)]
                                 rata_ = round(rata_,1)
-                            elif ('Feasibility'==subkpi_) and (asp==1) and (kriteria=='twitter' or kriteria=='email'):
+                                #display("feasibility 1", apa)
+                            elif ('Feasibility'==subkpi_) and (asp==1) and (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email'):
                                 rata_ =value_client[-1]
                                 rata_ = round(rata_,1)
+                                #display("feasibility 2", value_client)
+
                             elif ((subkpi_ == 'Service Standard Consistency') or (subkpi_=='Soft Skill')) and (kriteria=='email') and (asp!=len(aspek_feas)-1):
                                 if asp==0:
                                     rata_ =apa1[apa1.index.get_level_values('Brand').isin([client])].values[0][nama_bulan.index(k)]
+                                    #display("SSC 0", apa1)
                                 else:
-                                    rata_ =apa2[apa2.index.get_level_values('Brand').isin([client])].values[0][nama_bulan.index(k)]
+                                    rata_ =apa1[apa1.index.get_level_values('Brand').isin([client])].values[0][nama_bulan.index(k)]
+                                    #display("SSC 1", apa1)
                                 rata_ = round(rata_,1)
                             elif ((subkpi_ == 'Service Standard Consistency') or (subkpi_=='Soft Skill')) and (kriteria=='email') and (asp==len(aspek_feas)-1):
                                 rata_ =value_client[-1]
                                 rata_ = round(rata_,1)
+                                #display("SSC 2", data_subkpi)
+
                             else:
                                 id_value = header.index(k)
                                 rata_skor = 0
-
-                            for l in range(len(list_all)):
-                                rata_skor += list_all[l][id_value]
-                            rata_ = round(rata_skor / len(list_aspek),1)
+                                for l in range(len(list_all)):
+                                    rata_skor += list_all[l][id_value]
+                                rata_ = round(rata_skor / len(list_aspek),1)
                             list_temp.extend([rata_])
 
                         if len(list_temp)!=8:
@@ -1358,7 +1395,9 @@ def plot_tabel_data_semester(template_ppt, gambar_footer, list_bulan, data_xls, 
 
                         for k in range(cols):
                             t_value = list_temp[k]
-                            if type(t_value)==np.float64:
+                            if str(t_value)=='nan':
+                                val_ = '#N/A'
+                            elif type(t_value)==np.float64:
                                 val_ = str(t_value)+"%"
                             else:
                                 val_ = str(t_value)
@@ -1374,7 +1413,6 @@ def plot_tabel_data_semester(template_ppt, gambar_footer, list_bulan, data_xls, 
                                 tabel_plot.cell(j,k).text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
                             else:
                                 tabel_plot.cell(j,k).text_frame.paragraphs[0].alignment = PP_ALIGN.LEFT
-    #                     tabel_plot.cell(j,0).merge(tabel_plot.cell(j,1))
 
                 else:
                     list_temp.extend([''])
@@ -1468,7 +1506,7 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
                         kriteria=None, bobot=None):
     """
     Membuat slide barchart beserta tabelnya
-    
+
     Parameter
     ---------
     template_ppt : template ptt yang digunakan
@@ -1479,19 +1517,19 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
     subkpi_ : nama subkpi_ yang akan ditampilkan
     client : nama client yang dibuatkan laporan
     data_tahun : tahun pembuatan laporan
-    kriteria : kategori SEI yang akan dibuat ('call center', 'twitter', 'email')
+    kriteria : kategori SEI yang akan dibuat ('call center', 'online chat', 'twitter', 'email')
     bobot : dataframe yang berisi daftar bobot perhitungan indeks
-    
+
     Return
     ------
-    None    
-    """    
-    
+    None
+    """
+
     #data
-    data_mentah = pd.read_excel(data_xls, sheet_name='data mentah')
+    data_mentah = pd.read_excel(data_xls, sheet_name='data mentah', engine='openpyxl')
     list_brand = data_mentah['Brand'].unique()
 
-    data_aspek = pd.read_excel(data_xls, sheet_name='aspek')
+    data_aspek = pd.read_excel(data_xls, sheet_name='aspek', engine='openpyxl')
     data_aspek['Dimensi'] = data_aspek['Dimensi'].fillna(method='ffill')
     data_aspek['KPI'] = data_aspek['KPI'].fillna(method='ffill')
     data_aspek['SUB KPI'] = data_aspek['SUB KPI'].fillna(method='ffill')
@@ -1500,7 +1538,7 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
     data_aspek['Aspek'] = data_aspek['Aspek'].fillna(method='ffill')
     data_aspek = data_aspek.set_index(['Dimensi','KPI','SUB KPI','Nomor','Kode','Aspek','Brand'])
 
-    data_subkpi = pd.read_excel(data_xls, sheet_name='subkpi')
+    data_subkpi = pd.read_excel(data_xls, sheet_name='subkpi', engine='openpyxl')
     data_subkpi['Dimensi'] = data_subkpi['Dimensi'].fillna(method='ffill')
     data_subkpi['KPI'] = data_subkpi['KPI'].fillna(method='ffill')
     data_subkpi['SUB KPI'] = data_subkpi['SUB KPI'].fillna(method='ffill')
@@ -1509,8 +1547,16 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
 
     temp_df_ = data_aspek[data_aspek.index.get_level_values('SUB KPI').isin([subkpi_])]
     list_aspek = temp_df_.index.get_level_values('Aspek').unique().values
+    
+    subkpi_ivr = od.subkpi_ivr
 
-    if (kriteria=='twitter' or kriteria=='email') and (subkpi_ == 'Feasibility'):
+    if (kriteria=='twitter') or (kriteria=='online chat') or (kriteria=='email'):
+        crosstab_rata_transpose = pd.read_excel(data_xls, sheet_name = 'crosstab transpose',
+                                               header=[0,1],index_col=[0], engine='openpyxl')
+        crosstab_rata_transpose = crosstab_rata_transpose.reset_index()
+        crosstab_rata_transpose = crosstab_rata_transpose.rename(columns = {'KODE':'Aspek'})
+
+    if (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email') and (subkpi_ == 'Feasibility'):
         asp = temp_df_.index.get_level_values('Aspek').unique().to_list()
         aspek_feas = []
         for i in range(len(asp)):
@@ -1521,16 +1567,13 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
                 var['ASPEK1']=var['ASPEK1'].str.replace('Terlihat','')
                 var['ASPEK1']=var['ASPEK1'].str.replace('Di',' di')
 
-                crosstab_rata_transpose = pd.read_excel(data_xls, sheet_name = 'crosstab rata-rata',
-                                                       header=[0,1], index_col=[0])
-                crosstab_rata_transpose = crosstab_rata_transpose.rename(columns = {'Unnamed: 1_level_1':''})
                 apa = crosstab_rata_transpose[:4].copy()
                 apa['Aspek']=var['ASPEK1']
                 apa = apa.set_index('Aspek')
                 apa.columns = apa.columns.set_levels(nomor_bulan, level=0)
-                apa = apa.stack()
+                apa = apa.stack(dropna=False)
                 apa.columns = nama_bulan[:len(list_bulan)]
-                apa['~Average'] = round(apa.mean(axis=1),2)
+                apa['~Average'] = round(apa.mean(axis=1),1)
 
                 list_aspek = apa[apa.index.get_level_values('Brand').isin([client])].index.values
                 list_aspek = [x[0] for x in list_aspek]
@@ -1540,9 +1583,6 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
 
     elif (kriteria=='email') and ((subkpi_ == 'Service Standard Consistency') or (subkpi_ == 'Soft Skill')):
         var= bobot[['ASPEK','SUB ASPEK']].copy()
-        crosstab_rata_transpose = pd.read_excel(data_xls, sheet_name = 'crosstab rata-rata',
-                                               header=[0,1], index_col=[0])
-        crosstab_rata_transpose = crosstab_rata_transpose.rename(columns = {'Unnamed: 1_level_1':''})
         aspek_feas = []
         for i in range(3):
             asp = temp_df_.index.get_level_values('Aspek').unique().to_list()
@@ -1558,9 +1598,9 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
                 apa1['Aspek'] = pd.Series(subaspek_)
                 apa1 = apa1.set_index('Aspek')
                 apa1.columns = apa1.columns.set_levels(nomor_bulan, level=0)
-                apa1 = apa1.stack()
+                apa1 = apa1.stack(dropna=False)
                 apa1.columns = nama_bulan[:len(list_bulan)]
-                apa1['~Average'] = round(apa1.mean(axis=1),2)
+                apa1['~Average'] = round(apa1.mean(axis=1),1)
 
                 list_aspek = apa1[apa1.index.get_level_values('Brand').isin([client])].index.values
                 list_aspek = [x[0] for x in list_aspek]
@@ -1576,9 +1616,9 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
                 apa2['Aspek'] = pd.Series(subaspek_)
                 apa2 = apa2.set_index('Aspek')
                 apa2.columns = apa2.columns.set_levels(nomor_bulan, level=0)
-                apa2 = apa2.stack()
+                apa2 = apa2.stack(dropna=False)
                 apa2.columns = nama_bulan[:len(list_bulan)]
-                apa2['~Average'] = round(apa2.mean(axis=1),2)
+                apa2['~Average'] = round(apa2.mean(axis=1),1)
 
                 list_aspek = apa2[apa2.index.get_level_values('Brand').isin([client])].index.values
                 list_aspek = [x[0] for x in list_aspek]
@@ -1592,7 +1632,7 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
 
     for asp in range(len(aspek_feas)):
         list_aspek_sub = []
-        if (kriteria=='twitter' or kriteria=='email') and (subkpi_=='Feasibility'):
+        if (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email') and (subkpi_=='Feasibility'):
             list_aspek = aspek_feas[asp]
         elif (kriteria=='email') and ((subkpi_ == 'Service Standard Consistency') or (subkpi_ == 'Soft Skill')):
             list_aspek = aspek_feas[asp]
@@ -1621,7 +1661,7 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
             # define chart data ---------------------
             chart_data = CategoryChartData()
 
-            if (kriteria=='twitter' or kriteria=='email') and (subkpi_ == 'Feasibility'):
+            if (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email') and (subkpi_ == 'Feasibility'):
                 l_asp = temp_df_.index.get_level_values('Aspek').unique().to_list()
                 chart_kategori = list(temp_df_[temp_df_.index.get_level_values('Aspek').isin([l_asp[asp]])].index.get_level_values('Brand').values)
                 chart_kategori = chart_kategori[::-1]
@@ -1652,6 +1692,7 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
                 chart_nilai = list(temp_sub['~Average'].values)
                 chart_nilai = chart_nilai[::-1]
                 chart_nilai = [round(nl, 1) for nl in chart_nilai]
+            chart_nilai = ['#N/A' if str(x)=='nan' else x for x in chart_nilai]
 
 
             chart_data.categories = chart_kategori
@@ -1671,7 +1712,7 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
             chart.value_axis.tick_labels.font.size = Pt(10)
             if kriteria=='call center':
                 chart.category_axis.tick_labels.font.size = Pt(10)
-            elif kriteria=='twitter':
+            elif kriteria=='twitter' or kriteria=='online chat':
                 chart.category_axis.tick_labels.font.size = Pt(6)
             elif kriteria=='email':
                 chart.category_axis.tick_labels.font.size = Pt(4)
@@ -1683,12 +1724,12 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
                 chart.plots[0].series[0].points[lbl].data_label.text_frame.text = str(chart_nilai[lbl])+"%"
                 if kriteria=='call center':
                     chart.plots[0].series[0].points[lbl].data_label.font.size = Pt(10)
-                elif kriteria=='twitter':
+                elif kriteria=='twitter' or kriteria=='online chat':
                     chart.plots[0].series[0].points[lbl].data_label.font.size = Pt(6)
                 elif kriteria=='email':
                     chart.plots[0].series[0].points[lbl].data_label.font.size = Pt(4)
                 chart.plots[0].series[0].points[lbl].data_label.position = XL_LABEL_POSITION.INSIDE_END
-                if chart_nilai[lbl]==0:
+                if chart_nilai[lbl]==0 or chart_nilai[lbl]=='#N/A':
                     chart.plots[0].series[0].points[lbl].data_label.font.color.rgb = RGBColor(255,255,255)
                 chart.plots[0].series[0].points[lbl].format.fill.solid()
                 if chart_kategori[lbl]==client:
@@ -1729,7 +1770,7 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
                     else:
                         rows = len(l_aspek_sub)+2
             else:
-                if (kriteria=='twitter' or kriteria=='email') and (subkpi_ == 'Feasibility') and (asp==1):
+                if (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email') and (subkpi_ == 'Feasibility') and (asp==1):
                     rows = len([l_aspek_sub])+3
                 else:
                     rows = len(l_aspek_sub)+3
@@ -1761,7 +1802,7 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
             for baris in range(rows):
                 list_temp = []
                 if baris==0:
-                    if (kriteria=='twitter' or kriteria=='email') and (subkpi_ == 'Feasibility'):
+                    if (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email') and (subkpi_ == 'Feasibility'):
                         header = ['','ATRIBUT %s %s'%(str.upper(subkpi_), str(asp+1)),client, "Rata-rata Industri"]
                     elif (kriteria == 'email') and ((subkpi_ == 'Service Standard Consistency') or (subkpi_ == 'Soft Skill')) and (asp==0):
                         if subkpi_=='Service Standard Consistency':
@@ -1787,11 +1828,11 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
                     tabel_dibar.cell(baris,0).merge(tabel_dibar.cell(baris,1))
 
                 elif baris<len(l_aspek_sub)+1:
-                    if (kriteria=='twitter' or kriteria=='email') and (subkpi_ == 'Feasibility') and (asp==0):
+                    if (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email') and (subkpi_ == 'Feasibility') and (asp==0):
                         apa_asp = apa[apa.index.get_level_values('Aspek').isin([l_aspek_sub[baris-1]])]
                         value_avg_client = apa_asp[apa_asp.index.get_level_values('Brand').isin([client])].values[0][-1]
                         value_avg_industri = apa_asp[apa_asp.index.get_level_values('Brand').isin(['~Industri'])].values[0][-1]
-                    elif (kriteria=='twitter' or kriteria=='email') and (subkpi_ == 'Feasibility') and (asp==1):
+                    elif (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email') and (subkpi_ == 'Feasibility') and (asp==1):
                         temp_df_ = data_aspek[data_aspek.index.get_level_values('SUB KPI').isin([subkpi_])]
                         value_client = temp_df_[temp_df_.index.get_level_values('Aspek').isin([list_aspek[0]])]
                         value_avg_client = value_client[value_client.index.get_level_values('Brand').isin([client])].values[0][-1]
@@ -1823,7 +1864,9 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
 
                     for kolom in range(cols):
                         t_value = list_temp[kolom]
-                        if type(t_value)==np.float64:
+                        if str(t_value)=='nan':
+                            val_ = '#N/A'
+                        elif type(t_value)==np.float64:
                             val_ = str(round(t_value,1))+"%"
                         else:
                             val_ = str(t_value)
@@ -1866,7 +1909,7 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
                             tabel_dibar.cell(baris,kolom).fill.fore_color.rgb = RGBColor(255, 255, 255)
 
                     else:
-                        if (kriteria == 'twitter' or kriteria=='email') and (subkpi_ == 'Feasibility'):
+                        if (kriteria == 'twitter' or kriteria=='online chat' or kriteria=='email') and (subkpi_ == 'Feasibility'):
                             temp_df_1 = data_aspek[data_aspek.index.get_level_values('SUB KPI').isin([subkpi_])]
                             if asp==0:
                                 value_sub_client = temp_df_1[temp_df_1.index.get_level_values('Brand').isin([client])].values[0][-1]
@@ -1900,7 +1943,9 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
 
                         for kolom in range(cols):
                             t_value = list_temp[kolom]
-                            if type(t_value)==np.float64:
+                            if str(t_value)=='nan':
+                                val_ = '#N/A'
+                            elif type(t_value)==np.float64:
                                 val_ = str(round(t_value,1))+"%"
                             else:
                                 val_ = str(t_value)
@@ -1932,7 +1977,13 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
                         elif kolom==cols-2:
                             val_ = str(t_value*len(list_bulan))
                         elif kolom==cols-1:
-                            val_ = str(t_value*len(list_bulan)*len(list_brand))
+                            if (kriteria=='call center') and (subkpi_ in subkpi_ivr):
+                                brand_ivr, brand_nonivr = od.get_ivr_nonivr(data_mentah, list_brand)
+                                jumlah_ivr, jumlah_nonivr = len(brand_ivr), len(brand_nonivr)
+                                if (client in brand_ivr):
+                                    val_ = str(t_value*len(list_bulan)*jumlah_ivr)
+                            else:
+                                val_ = str(t_value*len(list_bulan)*len(list_brand))
                         else:
                             val_ = str(t_value)
                         _set_cell_border(tabel_dibar.cell(baris,kolom))
@@ -1954,7 +2005,7 @@ def plot_barchart_tabel(template_ppt, gambar_footer, list_bulan, data_xls, dimen
 def plot_tabel_engagement(template_ppt, gambar_footer, list_bulan, data_xls, client, data_tahun):
     """
     Membuat slide tabel indeks engagement
-    
+
     Parameter
     ---------
     template_ppt : template ptt yang digunakan
@@ -1963,12 +2014,12 @@ def plot_tabel_engagement(template_ppt, gambar_footer, list_bulan, data_xls, cli
     data_xls : file data yang akan ditampilkan di slide
     client : nama client yang dibuatkan laporan
     data_tahun : tahun pembuatan laporan
-    
+
     Return
     ------
-    None    
-    """    
-    
+    None
+    """
+
     slide = template_ppt.slide_layouts[6]
     slide = template_ppt.slides.add_slide(slide)
     shapes = slide.shapes
@@ -1986,12 +2037,12 @@ def plot_tabel_engagement(template_ppt, gambar_footer, list_bulan, data_xls, cli
     p.font.size = Pt(16)
     p.alignment = PP_ALIGN.CENTER
 
-    tabel_be_avg = pd.read_excel(data_xls, sheet_name='engagement index aspek',index_col=[0,1,2,3,4,5,6])
+    tabel_be_avg = pd.read_excel(data_xls, sheet_name='engagement index aspek',index_col=[0,1,2,3,4,5,6], engine='openpyxl')
     list_aspek = tabel_be_avg.index.droplevel([0,1,2,3,4,6]).unique().values
     eng_index = tabel_be_avg.copy()
     eng_index.index = eng_index.index.droplevel([0,1,2,3,4])
 
-    df_eng_final_pivot = pd.read_excel(data_xls, sheet_name = 'engagement index final', index_col=[0])
+    df_eng_final_pivot = pd.read_excel(data_xls, sheet_name = 'engagement index final', index_col=[0], engine='openpyxl')
 
     top = Inches(1.25)
     cols = 3
@@ -2032,7 +2083,9 @@ def plot_tabel_engagement(template_ppt, gambar_footer, list_bulan, data_xls, cli
 
             for k in range(cols):
                 t_value = list_temp[k]
-                if type(t_value)==np.float64:
+                if str(t_value)=='nan':
+                    val_ = '#N/A'
+                elif type(t_value)==np.float64:
                     t_value = round(t_value,1)
                     val_ = str(t_value)+"%"
                 else:
@@ -2061,7 +2114,9 @@ def plot_tabel_engagement(template_ppt, gambar_footer, list_bulan, data_xls, cli
 
             for k in range(cols):
                 t_value = list_temp[k]
-                if type(t_value)==np.float64:
+                if str(t_value)=='nan':
+                    val_ = '#N/A'
+                elif type(t_value)==np.float64:
                     t_value = round(t_value,1)
                     val_ = str(t_value)+"%"
                 else:
@@ -2081,11 +2136,10 @@ def plot_tabel_engagement(template_ppt, gambar_footer, list_bulan, data_xls, cli
 
 
 
-def plot_tabel_perbaikan(template_ppt, gambar_footer, list_bulan, data_xls, bobot, client, data_tahun, kriteria,
-                        kategori_call_center=None):
+def plot_tabel_perbaikan(template_ppt, gambar_footer, list_bulan, data_xls, bobot, client, data_tahun, kriteria):
     """
     Membuat slide tabel perbaikan
-    
+
     Parameter
     ---------
     template_ppt : template ptt yang digunakan
@@ -2095,32 +2149,33 @@ def plot_tabel_perbaikan(template_ppt, gambar_footer, list_bulan, data_xls, bobo
     bobot : dataframe yang berisi daftar bobot perhitungan indeks
     client : nama client yang dibuatkan laporan
     data_tahun : tahun pembuatan laporan
-    kriteria : kategori SEI yang akan dibuat ('call center', 'twitter', 'email')
-    kategori_call_center : kategori call center
-    
+    kriteria : kategori SEI yang akan dibuat ('call center', 'online chat', 'twitter', 'email')
+
     Return
     ------
-    None    
-    """    
-    
-    data_subkpi = pd.read_excel(data_xls, sheet_name='subkpi')
+    None
+    """
+
+    data_subkpi = pd.read_excel(data_xls, sheet_name='subkpi', engine='openpyxl')
     data_subkpi['Dimensi'] = data_subkpi['Dimensi'].fillna(method='ffill')
     data_subkpi['KPI'] = data_subkpi['KPI'].fillna(method='ffill')
     data_subkpi['SUB KPI'] = data_subkpi['SUB KPI'].fillna(method='ffill')
     data_subkpi = data_subkpi.set_index(['Dimensi','KPI','SUB KPI','Brand'])
     list_subkpi = data_subkpi.index.get_level_values('SUB KPI').unique()
 
-    df_aspek_perbaikan = pd.read_excel(data_xls, sheet_name = 'aspek perbaikan', index_col=[0,1,2,3], header=[0,1])
+    df_aspek_perbaikan = pd.read_excel(data_xls, sheet_name = 'aspek perbaikan', index_col=[0,1,2,3,4,5], engine='openpyxl')
+    bobot_indeks_ = pd.read_excel(bobot, sheet_name='perbaikan', engine='openpyxl')
+    bobot_indeks_ = bobot_indeks(bobot_indeks_, perbaikan=True)
 
-    data_mentah = pd.read_excel(data_xls, sheet_name='data mentah')
+    data_mentah = pd.read_excel(data_xls, sheet_name='data mentah', engine='openpyxl')
     list_brand = data_mentah.Brand.unique()
-    if (kategori_call_center=='car insurance') or (kategori_call_center=='courier') or (kategori_call_center=='regular banking'):
-        brand_ivr, brand_nonivr = get_ivr_nonivr(list_brand, kategori_call_center)
+    if (kriteria=='call center'):
+        brand_ivr, brand_nonivr = od.get_ivr_nonivr(data_mentah, list_brand)
 
 
     for j_subkpi in range(len(list_subkpi)):
         subkpi_ = list_subkpi[j_subkpi]
-        if (kriteria=='twitter' or kriteria=='email') and (subkpi_ == 'Feasibility'):
+        if (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email') and (subkpi_ == 'Feasibility'):
             asp = 2
         elif (kriteria=='email') and ((subkpi_ == 'Service Standard Consistency') or (subkpi_=='Soft Skill')):
             asp = 3
@@ -2128,50 +2183,38 @@ def plot_tabel_perbaikan(template_ppt, gambar_footer, list_bulan, data_xls, bobo
             asp = 1
 
         for loop in range(asp):
-            temp_df_ = df_aspek_perbaikan[(client)].reset_index()
-            if (kriteria=='twitter' or kriteria=='email') and (subkpi_ == 'Feasibility'):
-                temp_df_ = temp_df_[(temp_df_['SUB KPI'].isin([subkpi_])) & (temp_df_['NOMOR'].isin([loop+1]))]
-                bobot_indeks_ = pd.read_excel(bobot, sheet_name='indeks')
-                bobot_indeks_ = bobot_indeks(bobot_indeks_)
-                var = bobot_indeks_[['ASPEK','SUB ASPEK']][:4].copy()
-                var['ASPEK1'] = var['ASPEK']+var['SUB ASPEK']
-                var['ASPEK1']=var['ASPEK1'].str.replace('Ada','')
-                var['ASPEK1']=var['ASPEK1'].str.replace('Terlihat','')
-                var['ASPEK1']=var['ASPEK1'].str.replace('Di',' di')
+            temp_df_ = df_aspek_perbaikan.unstack().stack(level=0, dropna=False).unstack()
+            temp_df_ = temp_df_[(client)].reset_index()
+            if (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email') and (subkpi_ == 'Feasibility'):
+                temp_df_ = temp_df_[(temp_df_['SUB KPI'].isin([subkpi_])) & (temp_df_['NOMOR LEVEL 1'].isin([loop+1]))]
+                var = bobot_indeks_[['ASPEK LAPORAN']][:4]
             elif (kriteria=='email') and ((subkpi_ == 'Service Standard Consistency') or (subkpi_=='Soft Skill')):
-                bobot_indeks_ = pd.read_excel(bobot, sheet_name='indeks')
-                bobot_indeks_ = bobot_indeks(bobot_indeks_)
                 if loop==0:
                     if subkpi_=='Service Standard Consistency':
-                        temp_df_ = temp_df_[(temp_df_['SUB KPI'].isin([subkpi_])) & (temp_df_['ASPEK'].str.contains('Pembuka'))]
+                        temp_df_ = temp_df_[(temp_df_['SUB KPI'].isin([subkpi_])) & (temp_df_['ASPEK LAPORAN'].str.contains('Pembuka'))]
                     elif subkpi_ == 'Soft Skill':
-                        temp_df_ = temp_df_[(temp_df_['SUB KPI'].isin([subkpi_])) & (temp_df_['ASPEK'].str.contains('Etika yang Baik'))]
+                        temp_df_ = temp_df_[(temp_df_['SUB KPI'].isin([subkpi_])) & (temp_df_['ASPEK LAPORAN'].str.contains('Etika yang Baik'))]
                 elif loop==1:
                     if subkpi_=='Service Standard Consistency':
-                        temp_df_ = temp_df_[(temp_df_['SUB KPI'].isin([subkpi_])) & (temp_df_['ASPEK'].str.contains('Penutup'))]
+                        temp_df_ = temp_df_[(temp_df_['SUB KPI'].isin([subkpi_])) & (temp_df_['ASPEK LAPORAN'].str.contains('Penutup'))]
                     elif subkpi_ == 'Soft Skill':
-                        temp_df_ = temp_df_[(temp_df_['SUB KPI'].isin([subkpi_])) & (temp_df_['ASPEK'].str.contains('Bahasa Service yang Baik'))]
+                        temp_df_ = temp_df_[(temp_df_['SUB KPI'].isin([subkpi_])) & (temp_df_['ASPEK LAPORAN'].str.contains('Bahasa Service yang Baik'))]
                 else:
                     if subkpi_=='Service Standard Consistency':
-                        temp_df_ = temp_df_[(temp_df_['SUB KPI'].isin([subkpi_])) & ~(temp_df_['ASPEK'].str.contains('Pembuka'))]
-                        temp_df_ = temp_df_[~(temp_df_['ASPEK'].str.contains('Penutup'))]
+                        temp_df_ = temp_df_[(temp_df_['SUB KPI'].isin([subkpi_])) & ~(temp_df_['ASPEK LAPORAN'].str.contains('Pembuka'))]
+                        temp_df_ = temp_df_[~(temp_df_['ASPEK LAPORAN'].str.contains('Penutup'))]
                     elif subkpi_ == 'Soft Skill':
-                        temp_df_ = temp_df_[(temp_df_['SUB KPI'].isin([subkpi_])) & ~(temp_df_['ASPEK'].str.contains('Etika yang Baik'))]
-                        temp_df_ = temp_df_[~(temp_df_['ASPEK'].str.contains('Bahasa Service yang Baik'))]
-                asp_ = temp_df_['ASPEK'].unique()#.to_list()
+                        temp_df_ = temp_df_[(temp_df_['SUB KPI'].isin([subkpi_])) & ~(temp_df_['ASPEK LAPORAN'].str.contains('Etika yang Baik'))]
+                        temp_df_ = temp_df_[~(temp_df_['ASPEK LAPORAN'].str.contains('Bahasa Service yang Baik'))]
+                asp_ = temp_df_['ASPEK LAPORAN'].unique()#.to_list()
                 if loop==0:
-                    if subkpi_=='Service Standard Consistency':
-                        subaspek_1 = [x.replace('Bagian Pembuka - ','') for x in asp_]
-                    elif subkpi_ =='Soft Skill':
-                        subaspek_1 = [x.replace('Etika yang Baik - ','') for x in asp_]
+                    subaspek_1 = asp_
                 elif loop==1:
-                    if subkpi_=='Service Standard Consistency':
-                        subaspek_2 = [x.replace('Bagian Penutup - ','') for x in asp_]
-                    elif subkpi_=='Soft Skill':
-                        subaspek_2 = [x.replace('Bahasa Service yang Baik - ','') for x in asp_]
+                    subaspek_2 = asp_
             else:
                 temp_df_ = temp_df_[temp_df_['SUB KPI'].isin([subkpi_])]
-            list_aspek = temp_df_['ASPEK'].values
+            list_aspek = temp_df_['ASPEK LAPORAN'].values
+
 
             slide_perbaikan = template_ppt.slide_layouts[6]
             slide = template_ppt.slides.add_slide(slide_perbaikan)
@@ -2207,7 +2250,7 @@ def plot_tabel_perbaikan(template_ppt, gambar_footer, list_bulan, data_xls, bobo
             for baris in range(rows):
                 list_temp = []
                 if baris==0:
-                    if (kriteria=='twitter' or kriteria=='email') and (subkpi_ == 'Feasibility'):
+                    if (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email') and (subkpi_ == 'Feasibility'):
                         header = ['','ATRIBUT %s %s'%(str.upper(subkpi_), str(loop+1)),'Frekuensi Perbaikan','Impact Index','Priority Index']
                     elif (kriteria=='email') and ((subkpi_ == 'Service Standard Consistency') or (subkpi_=='Soft Skill')):
                         if loop==0:
@@ -2238,8 +2281,8 @@ def plot_tabel_perbaikan(template_ppt, gambar_footer, list_bulan, data_xls, bobo
                     list_perbaikan.cell(baris,0).merge(list_perbaikan.cell(baris,1))
 
                 else:
-                    if (kriteria=='twitter' or kriteria=='email') and (subkpi_ == 'Feasibility') and (loop==0):
-                        aspek_ = var['ASPEK1'][baris-1]
+                    if (kriteria=='twitter' or kriteria=='online chat' or kriteria=='email') and (subkpi_ == 'Feasibility') and (loop==0):
+                        aspek_ = var['ASPEK LAPORAN'][baris-1]
                     elif (kriteria=='email') and ((subkpi_ == 'Service Standard Consistency') or (subkpi_=='Soft Skill')):
                         if loop==0:
                             aspek_ = subaspek_1[baris-1]
@@ -2252,14 +2295,14 @@ def plot_tabel_perbaikan(template_ppt, gambar_footer, list_bulan, data_xls, bobo
                     frek_ = temp_df_['Frekuensi Perbaikan'].reset_index(drop=True)[baris-1]
                     prindex_ = temp_df_['_Priority Index'].reset_index(drop=True)[baris-1]
 
-                    bobot_perbaikan = pd.read_excel(bobot, sheet_name = 'perbaikan')
+                    bobot_perbaikan = pd.read_excel(bobot, sheet_name = 'perbaikan', engine='openpyxl')
                     if kriteria=='call center':
                         if client in brand_ivr:
-                            imindex_ = bobot_perbaikan[bobot_perbaikan.ASPEK.isin([list_aspek[baris-1]])]['BOBOT IMPACT IVR'].values[0]
+                            imindex_ = bobot_perbaikan[bobot_perbaikan['ASPEK LAPORAN'].isin([list_aspek[baris-1]])]['BOBOT IMPACT IVR'].values[0]
                         else:
-                            imindex_ = bobot_perbaikan[bobot_perbaikan.ASPEK.isin([list_aspek[baris-1]])]['BOBOT IMPACT NON-IVR'].values[0]
+                            imindex_ = bobot_perbaikan[bobot_perbaikan['ASPEK LAPORAN'].isin([list_aspek[baris-1]])]['BOBOT IMPACT NON-IVR'].values[0]
                     else:
-                        imindex_ = bobot_perbaikan[bobot_perbaikan.ASPEK.isin([list_aspek[baris-1]])]['BOBOT IMPACT'].values[0]
+                        imindex_ = bobot_perbaikan[bobot_perbaikan['ASPEK LAPORAN'].isin([list_aspek[baris-1]])]['BOBOT IMPACT'].values[0]
 
                     list_temp.extend([baris])
                     list_temp.extend([aspek_])
