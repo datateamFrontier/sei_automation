@@ -1,5 +1,12 @@
 README
 
+Tujuan
+untuk melakukan otomasi ESEI
+- CCSEI : call center
+- ESEI : email
+- CSEI : chat
+
+
 program_gabungan_v2
 
 - Perbedaan dengan v1 adalah v2 ini direncanakan untuk data yang masuk dari caller lewat googleform
