@@ -2,6 +2,8 @@
 
 merupakan prototype untuk melakukan otomasi pembuatan report projek SEI
 
+Rencana akan ganti platform dari Gform ke Q7
+
 ## Tujuan
 
 untuk melakukan otomasi ESEI
@@ -19,6 +21,7 @@ untuk melakukan otomasi ESEI
 
 
 <hr>
+
 ## Keterangan file & folder
 
 ### Folder
@@ -27,6 +30,7 @@ untuk melakukan otomasi ESEI
 * data kuesioner  : data mentah yang didownload dari google form dalam bentuk csv
 * data mentah		: data mentah yang siap untuk olah indeks (menggunakan program)
 * gambar			: gambar-gambar yang dibutuhkan untuk laporan powerpoint
+* format_template_olah_data_asli : berisi excel dengan format asli untuk melakukan olah indeks, dapat digunakan sebagai acuan pembuatan kuesioner dan file **bobot**
 * laporan			: output laporan powerpoint yang dihasilkan program
 * tabel output	: excel tabel-tabel output program
 
