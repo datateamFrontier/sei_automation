@@ -10,6 +10,7 @@ untuk melakukan otomasi ESEI
 
 * CCSEI : call center
 * ESEI : email
+* TSEI : twitter
 * CSEI : chat
 
 
